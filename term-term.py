@@ -13,8 +13,6 @@ def getCos(d, word1, word2):
         if item[0][0] == word2:
             targetWord2.append(item)
 
-    # print(dict(targetWord1))
-    # print(dict(targetWord2))
     commonWords1 = []
     commonWords2 = []
 
@@ -24,8 +22,6 @@ def getCos(d, word1, word2):
             if(item2[0][1] == context):
                 commonWords1.append(item)
                 commonWords2.append(item2)
-    # print(commonWords1)
-    # print(commonWords2)
     num = 0
     denw1 = 0
     denw2 = 0
@@ -34,22 +30,19 @@ def getCos(d, word1, word2):
         denw1 += l[1]**2
         denw2 += n[1]**2
     try:
-        # print(num, denw1, denw2)
         return num/((denw1**.5)*(denw2**.5))
     except:
-        print("zero")
+        print("0.0")
 
 
 def take(n, iterable):
-    "Return first n items of the iterable as a list"
     return list(islice(iterable, n))
 
 
-def dictMethod(arr, window=4):
+def getMatrix(arr, window=4):
     dictn = {}
     count = 1
     arrSize = len(arr)
-    # for i in range(4, len(arr)-window):
     i = window
     stop = len(arr)-window
     while i < stop:
@@ -67,10 +60,8 @@ def dictMethod(arr, window=4):
             else:
                 dictn[(arr[i], arr[j])] = 0
             j = j+1
-        if count % (arrSize//20) == 0:
+        if count % (arrSize//15) == 0:
             numNonZero = len([k for k in dictn.values() if k != 0])
-            print(numNonZero, "--")
-            # print(arrSize//30, count)
             if numNonZero > 80000:
                 dictn = dict(
                     sorted(dictn.items(), key=operator.itemgetter(1), reverse=True))
@@ -87,9 +78,7 @@ def dictMethod(arr, window=4):
 def readFile(file, numChars):
     file = open(file)
     arr = file.read(numChars)
-    print(len(arr))
     arr = arr.split(" ")
-    print(len(arr))
     return arr
 
 
@@ -98,9 +87,11 @@ fileData = readFile("text8", 100000000)
 print("--- %s seconds ---" % (time.time() - start_time))
 
 start_time = time.time()
-dictData = dictMethod(fileData)
+dictData = getMatrix(fileData)
 print("--- %s seconds ---" % (time.time() - start_time))
 
 start_time = time.time()
-print(getCos(dictData, "one", "two"))
+print(getCos(dictData, "car", "food"))
+print(getCos(dictData, "revolution", "positive"))
+print(getCos(dictData, "revolution", "negative"))
 print("--- %s seconds ---" % (time.time() - start_time))
