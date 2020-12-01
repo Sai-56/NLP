@@ -40,38 +40,38 @@ def take(n, iterable):
 
 
 def getMatrix(arr, window=4):
+    vocab = {}
+    for i in arr:
+        if i in vocab.keys():
+            vocab[i] += 1
+        else:
+            vocab[i] = 1
+
+    vocab = dict(
+        sorted(vocab.items(), key=operator.itemgetter(1), reverse=True))
+    vocab = dict(take(10000, vocab.items()))
+
+    # print(vocab)
+
     dictn = {}
-    count = 1
-    arrSize = len(arr)
-    i = window
     stop = len(arr)-window
-    while i < stop:
-        j = i-window
-        while j < i:
-            if (arr[i], arr[j]) in dictn:
-                dictn[(arr[i], arr[j])] += 1
-            else:
-                dictn[(arr[i], arr[j])] = 0
-            j = j+1
-        j = i+1
-        while j < i+window+1:
-            if (arr[i], arr[j]) in dictn:
-                dictn[(arr[i], arr[j])] += 1
-            else:
-                dictn[(arr[i], arr[j])] = 0
-            j = j+1
-        if count % (arrSize//15) == 0:
-            numNonZero = len([k for k in dictn.values() if k != 0])
-            if numNonZero > 80000:
-                dictn = dict(
-                    sorted(dictn.items(), key=operator.itemgetter(1), reverse=True))
-                dictn = dict(take(50000, dictn.items()))
-        count = count + 1
-        i = i+1
-    numNonZero = len([k for k in dictn.values() if k != 0])
-    dictn = dict(
-        sorted(dictn.items(), key=operator.itemgetter(1), reverse=True))
-    dictn = dict(take(50000, dictn.items()))
+    for i in range(window, stop):
+        for j in range(i-window, i):
+            if arr[i] in vocab and arr[j] in vocab:
+                if (arr[i], arr[j]) in dictn:
+                    dictn[(arr[i], arr[j])] += 1
+                else:
+                    dictn[(arr[i], arr[j])] = 1
+        for j in range(i+1, i+window+1):
+            if arr[i] in vocab and arr[j] in vocab:
+                if (arr[i], arr[j]) in dictn:
+                    dictn[(arr[i], arr[j])] += 1
+                else:
+                    dictn[(arr[i], arr[j])] = 1
+        
+
+    # numNonZero = len([k for k in dictn.values() if k != 1])
+
     return dictn
 
 
@@ -81,17 +81,8 @@ def readFile(file, numChars):
     arr = arr.split(" ")
     return arr
 
-
 start_time = time.time()
 fileData = readFile("text8", 100000000)
-print("--- %s seconds ---" % (time.time() - start_time))
-
-start_time = time.time()
 dictData = getMatrix(fileData)
-print("--- %s seconds ---" % (time.time() - start_time))
-
-start_time = time.time()
-print(getCos(dictData, "car", "food"))
-print(getCos(dictData, "revolution", "positive"))
-print(getCos(dictData, "revolution", "negative"))
+print(getCos(dictData, "there", "is"))
 print("--- %s seconds ---" % (time.time() - start_time))
