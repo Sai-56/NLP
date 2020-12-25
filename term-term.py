@@ -1,5 +1,7 @@
 import operator
 from itertools import islice
+from itertools import tee
+
 import time
 
 
@@ -17,9 +19,9 @@ def getCos(d, word1, word2):
     commonWords2 = []
 
     for item in targetWord1:
-        context = item[0][1]
+        target = item[0][1]
         for item2 in targetWord2:
-            if(item2[0][1] == context):
+            if(item2[0][1] == target):
                 commonWords1.append(item)
                 commonWords2.append(item2)
     num = 0
@@ -40,49 +42,93 @@ def take(n, iterable):
 
 
 def getMatrix(arr, window=4):
+    # it = iter(arr)
     vocab = {}
-    for i in arr:
+    gen1, gen2 = tee(arr)
+
+    for i in gen1:
         if i in vocab.keys():
             vocab[i] += 1
         else:
             vocab[i] = 1
 
+    # it = iter(arr)
     vocab = dict(
         sorted(vocab.items(), key=operator.itemgetter(1), reverse=True))
-    vocab = dict(take(10000, vocab.items()))
-
-    # print(vocab)
+    vocab = dict(take(1000, vocab.items()))
 
     dictn = {}
-    stop = len(arr)-window
-    for i in range(window, stop):
-        for j in range(i-window, i):
-            if arr[i] in vocab and arr[j] in vocab:
-                if (arr[i], arr[j]) in dictn:
-                    dictn[(arr[i], arr[j])] += 1
-                else:
-                    dictn[(arr[i], arr[j])] = 1
-        for j in range(i+1, i+window+1):
-            if arr[i] in vocab and arr[j] in vocab:
-                if (arr[i], arr[j]) in dictn:
-                    dictn[(arr[i], arr[j])] += 1
-                else:
-                    dictn[(arr[i], arr[j])] = 1
-        
+    context = []
 
-    # numNonZero = len([k for k in dictn.values() if k != 1])
+    q = 0
+    while q < window*2+1:
+        w = next(gen2)
+        context.append(w)
+        q = q+1
+
+    for target in gen2:
+        for j in range(len(context)):
+            if context[window] in vocab and context[j] in vocab and j != window:
+                if (context[window], context[j]) in dictn:
+                    dictn[(context[window], context[j])] += 1
+                else:
+                    dictn[(context[window], context[j])] = 1
+        context.pop(0)
+        context.append(target)
+
+    for j in range(len(context)):
+        if context[window] in vocab and context[j] in vocab and j != window:
+            if (context[window], context[j]) in dictn:
+                dictn[(context[window], context[j])] += 1
+            else:
+                dictn[(context[window], context[j])] = 1
 
     return dictn
 
 
-def readFile(file, numChars):
+def readFileWGenerator(file):
     file = open(file)
-    arr = file.read(numChars)
-    arr = arr.split(" ")
+    dat = file.read(1)
+    word = ""
+    while dat:
+        if dat == " ":
+            yield word
+            word = ""
+        else:
+            word = word+dat
+        dat = file.read(1)
+    yield word
+
+
+def readFileWList(file):
+    file = open(file)
+    arr = file.readlines()
+    arr = arr[0].split(" ")
     return arr
 
+# file = open("demo.txt")
+
+
+# def f():
+#     dat = file.read(1)
+#     word = ""
+#     while dat:
+#         if dat == " ":
+#             yield word
+#             word = ""
+#         else:
+#             word = word+dat
+#         dat = file.read(1)
+#     yield word
+
+# f = f()
+# for i in f:
+#     print(i)
+
 start_time = time.time()
-fileData = readFile("text8", 100000000)
-dictData = getMatrix(fileData)
+fileData = readFileWGenerator("text8")
+
+dictData = getMatrix(fileData, 4)
+
 print(getCos(dictData, "there", "is"))
 print("--- %s seconds ---" % (time.time() - start_time))
