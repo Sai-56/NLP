@@ -57,7 +57,7 @@ class Embedding:
         try:
             return num / ((denw1 ** .5) * (denw2 ** .5))
         except:
-            return ("0.0")
+            return 0
 
 
 class TermTermEmbedding(Embedding):
@@ -99,36 +99,29 @@ def getCos(d, word1, word2):
         if item[0][0] == word2:
             targetWord2.append(item)
 
-    commonWords1 = []
-    commonWords2 = []
+    commonContext1 = []   # elements in form of (target, context, frequency)
+    commonContext2 = []
 
     for item in targetWord1:
         target = item[0][1]
         for item2 in targetWord2:
             if item2[0][1] == target:
-                commonWords1.append(item)
+                commonContext1.append(item)
     for item in targetWord2:
         target = item[0][1]
         for item2 in targetWord1:
             if item2[0][1] == target:
-                commonWords2.append(item)
+                commonContext2.append(item)
 
     cw1 = {}  # common word : freq
-    cw = []  # lsit of just thw words in common
-    _cw = []  # lsit of just thw words in common
+    cw = []  # list common words
 
-    for i in commonWords1:
+    for i in commonContext1:
         cw1[i[0][1]] = i[1]
         cw.append(i[0][1])
     cw2 = {}
-    for i in commonWords2:
+    for i in commonContext2:
         cw2[i[0][1]] = i[1]
-        _cw.append(i[0][1])
-
-    cw.sort()
-    _cw.sort()
-    if(cw != _cw):
-        print(cw, "\n-----", _cw)
 
     num = 0
     denw1 = 0
@@ -141,7 +134,7 @@ def getCos(d, word1, word2):
     try:
         return num / ((denw1 ** .5) * (denw2 ** .5))
     except:
-        print("0.0")
+        return 0
 
 
 def take(n, iterable):
@@ -186,79 +179,24 @@ def _PCA(X, num_components):
     return X_reduced
 
 
-# X = np.random.randint(10,50,100).reshape(20,5)
-
-
-def convertToMatrix(dictn):
-    keys = np.array(list(dictn.keys()))
-    vals = np.array(list(dictn.values()))
-    unq_keys, key_idx = np.unique(keys, return_inverse=True)
-
-    key_idx = key_idx.reshape((-1, 2))
-    n = len(unq_keys)
-    adj = np.zeros((n, n), dtype=vals.dtype)
-    adj[key_idx[:, 0], key_idx[:, 1]] = vals
-
-    a = adj[np.where(unq_keys == "food")].astype("int64")
-    b = adj[np.where(unq_keys == "one")].astype("int64")
-    # print(unq_keys)
-
-    num = 0
-    denw1 = 0
-    denw2 = 0
-
-    for i in range(len(a)):
-        num = num + a[i] * b[i]
-        denw1 += a[i] ** 2
-        denw2 += b[i] ** 2
-
-    numerator = np.sum(num)
-    den = np.sqrt(np.sum(denw1))
-    den1 = np.sqrt(np.sum(denw2))
-
-    print("Cos by Matrix 2:", numerator / (den * den1))
-    print("Cos by dict:", getCos(dictn, "food", "one"))
-
-    _adj = _PCA(adj, 3000)
-    # print(_adj.shape)
-    # print(_adj)
-
-    a1 = _adj[np.where(unq_keys == "food")].astype("int64")
-    b1 = _adj[np.where(unq_keys == "one")].astype("int64")
-    num = 0
-    denw1 = 0
-    denw2 = 0
-
-    for i in range(len(a)):
-        num += a1[i] * b1[i]
-        denw1 += a1[i] ** 2
-        denw2 += b1[i] ** 2
-
-    numerator = np.sum(num)
-    den = np.sqrt(np.sum(denw1))
-    den1 = np.sqrt(np.sum(denw2))
-
-    print("Cos by PCA 2:", numerator / (den * den1))
-
-
 def getMatrix(dictn):
+    '''Returns a matrix of the frequency and the keys as tuple'''
     keys = np.array(list(dictn.keys()))
     vals = np.array(list(dictn.values()))
     unq_keys, key_idx = np.unique(keys, return_inverse=True)
 
     key_idx = key_idx.reshape((-1, 2))
     n = len(unq_keys)
-    adj = np.zeros((n, n), dtype=vals.dtype)
-    adj[key_idx[:, 0], key_idx[:, 1]] = vals
+    mat = np.zeros((n, n), dtype=vals.dtype)
+    mat[key_idx[:, 0], key_idx[:, 1]] = vals
 
-    return (adj, unq_keys)
+    return (mat, unq_keys)
 
 
-def getCosMatrix(adj, unq_keys, word1, word2):
-
-    a = adj[np.where(unq_keys == word1)].astype("int64")
-    b = adj[np.where(unq_keys == word2)].astype("int64")
-    # print(unq_keys)
+def getCosMatrix(mat, unq_keys, word1, word2):
+    '''Get cos through a numpy matrix'''
+    a = mat[np.where(unq_keys == word1)].astype("int64")
+    b = mat[np.where(unq_keys == word2)].astype("int64")
 
     num = 0
     denw1 = 0
@@ -273,30 +211,6 @@ def getCosMatrix(adj, unq_keys, word1, word2):
     den = np.sqrt(np.sum(denw1))
     den1 = np.sqrt(np.sum(denw2))
 
-    # print("Cos by Matrix 2:", numerator / (den * den1))
-    return numerator / (den * den1)
-
-
-def getCosPCA(_adj, unq_keys, word1, word2):
-    # print(_adj.shape)
-    # print(_adj)
-
-    a1 = _adj[np.where(unq_keys == word1)].astype("int64")
-    b1 = _adj[np.where(unq_keys == word2)].astype("int64")
-    num = 0
-    denw1 = 0
-    denw2 = 0
-
-    for i in range(len(a1)):
-        num += a1[i] * b1[i]
-        denw1 += a1[i] ** 2
-        denw2 += b1[i] ** 2
-
-    numerator = np.sum(num)
-    den = np.sqrt(np.sum(denw1))
-    den1 = np.sqrt(np.sum(denw2))
-
-    # print("Cos by PCA 2:", numerator / (den * den1))
     return numerator / (den * den1)
 
 
@@ -322,86 +236,104 @@ def getVocab(file, vocabSize):
 
 
 start_time = time.time()
-# vocab = getVocab("text8", 1000)
-# embedding = TermTermEmbedding(vocab[0], 4, vocab[1])
-# with open('filename.pickle', 'wb') as handle:
-#     pickle.dump(embedding.dictn, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-with open('filename.pickle', 'rb') as handle:
-    E = pickle.load(handle)
-
-# print("pickled")
-# print(E)
-# print(embedding.getCos("food", "one"))
-# convertToMatrix(E)
 
 vocabSize = 1000
-matrix = getMatrix(E)
-w1 = "car"
-topCos = []
 
+# Pickling dictionary
+# Comment once pickled to avoid re running every time.
+vocab = getVocab("text8", vocabSize)
+E = TermTermEmbedding(vocab[0], 4, vocab[1])
+with open('filename.pickle', 'wb') as handle:
+    pickle.dump(E.dictn, handle, protocol=pickle.HIGHEST_PROTOCOL)
+dictionary = E.dictn
+
+
+# Once The vocabulary has been pickled, this can be used
+# with open('filename.pickle', 'rb') as handle:
+#     dictionary = pickle.load(handle)
+
+
+matrix = getMatrix(dictionary)
+w1 = "food"
+topCos = []
+topCos2 = []
+pca = _PCA(matrix[0], 1000)
+
+print("Matrix", getCosMatrix(matrix[0], matrix[1], "food", "car"))
+print("PCA", getCosMatrix(pca, matrix[1], "food", "car"))
+print("Dictn", getCos(dictionary, "food", "car"))
+
+#   before pca
 for i in range(vocabSize):
     cos = getCosMatrix(matrix[0], matrix[1], w1, matrix[1][i])
-    if i < 40:
+    if i < 10:
         topCos.append((w1, matrix[1][i], cos))
     else:
         for j in range(len(topCos)):
             if cos > topCos[j][2]:
                 topCos[j] = (w1, matrix[1][i], cos)
                 break
-print(topCos)
 
-pca = _PCA(matrix[0], 1000)
+print("Matrix\n", topCos)
+
+
+# after pca
 topCos2 = []
-
 for i in range(vocabSize):
-    cos = getCosPCA(pca, matrix[1], w1, matrix[1][i])
-    if i < 40:
+    cos = getCosMatrix(pca, matrix[1], w1, matrix[1][i])
+    if i < 10:
         topCos2.append((w1, matrix[1][i], cos))
     else:
         for j in range(len(topCos2)):
             if cos > topCos2[j][2]:
                 topCos2[j] = (w1, matrix[1][i], cos)
                 break
-print(topCos2)
+print("PCA\n",      topCos2)
 
 
+# Using regular getCos, This is very slow and
+# takes very long to compile (~ 150 to 350 secs for vocab of 1000 words)
+'''
 topCos3 = []
-
 for i in range(vocabSize):
-    cos = getCos(E, w1, matrix[1][i])
-    if i < 40:
+    cos = getCos(dictionary, w1, matrix[1][i])
+    if i < 10:
         topCos3.append((w1, matrix[1][i], cos))
     else:
         for j in range(len(topCos3)):
             if cos > topCos3[j][2]:
                 topCos3[j] = (w1, matrix[1][i], cos)
                 break
-    if i % 250 == 0:
-        print(i)
-print(topCos3)
+print("Dictn\n",      topCos3)
+'''
 
-common1 = []
-common2 = []
-common3 = []
+originalWords = []
+PCAWords = []
+DictnWords = []
+# print(f'{"Matrix":<15} {"PCA":<15} {"Dictn":<15}')
+print(f'{"Matrix":<15} {"PCA":<15}')
+
 
 for i in range(len(topCos)):
 
-    common1.append(topCos[i][1])
-    common2.append(topCos2[i][1])
-    common3.append(topCos3[i][1])
+    originalWords.append(topCos[i][1])
+    PCAWords.append(topCos2[i][1])
+    # DictnWords.append(topCos3[i][1])
 
-    print(topCos[i][1], "   ", topCos2[i][1], topCos3[i][1])
-c1 = []
-c2 = []
+    # print(f'{topCos[i][1]:<15} {topCos2[i][1]:<15} {topCos3[i][1]:<15}')
+    print(f'{topCos[i][1]:<15} {topCos2[i][1]:<15}')
 
-for i in range(len(common1)):
-    if common2[i] in common1:
-        c1.append(common2[i])
-    if common2[i] in common3:
-        c2.append(common2[i])
-print(c1)
-print(c2)
+common = []
+common2 = []
+
+for i in range(len(originalWords)):
+    if PCAWords[i] in originalWords:
+        common.append(PCAWords[i])
+    # if PCAWords[i] in DictnWords:
+    #     common2.append(PCAWords[i])
+
+print("Words in PCA list also in Original Matrix:", common)
+# print("Words in PCA list also in Original Dictn:", common2)
 
 
 print("--- %s seconds ---" % (time.time() - start_time))
